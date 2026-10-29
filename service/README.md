@@ -46,6 +46,24 @@ can't be listed with an API key, so label ids go in the config.
 
 Webhook paths end in `/twenty` and `/warmbly` (e.g. `https://host/hooks/crm-sync/twenty`).
 
+## Running it
+
+    docker build -t crm-sync service
+    docker run -d --name crm-sync -p 8092:8092 -v crm-sync-data:/data \
+      -v $PWD/config.json:/config.json:ro -e CRM_SYNC_CONFIG=/config.json \
+      -e TWENTY_API_KEY=… -e WARMBLY_API_KEY=… \
+      -e TWENTY_WEBHOOK_SECRET=… -e WARMBLY_WEBHOOK_SECRET=… crm-sync
+
+Expose only the two webhook paths publicly (POST), keep `/healthz` private. With
+`metrics_file` set, the service writes Prometheus metrics for the node_exporter textfile
+collector (`crm_sync_last_reconcile_success_timestamp_seconds`, queue and error counts);
+alert when the last successful reconciliation is older than ~35 minutes. Back up the
+SQLite file (`db_path`): it holds the links between records and contacts.
+
 ## Tests
 
     python -m pytest tests     # in-memory Twenty and Warmbly, no network
+
+## License
+
+Apache-2.0 (see `LICENSE`).
