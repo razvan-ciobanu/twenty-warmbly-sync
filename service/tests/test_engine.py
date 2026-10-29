@@ -32,6 +32,18 @@ def test_company_generic_address_is_its_own_contact(env):
     assert env.twenty.records["company"][company["id"]]["warmblyContactId"] == c["id"]
 
 
+def test_name_set_in_warmbly_on_company_address_is_kept(env):
+    company = env.twenty.add_company("Hotel Lux", email="rezervari@hotel.ro", tip="HOTEL")
+    env.engine.sync_twenty("company", company["id"])
+    c = env.contact_of("company", company["id"])
+    env.warmbly.edit(c["id"], first_name="Maria")
+    env.engine.sync_warmbly(c["id"])
+    env.twenty.update("company", company["id"], {"name": "Hotel Lux SRL"})
+    env.engine.sync_twenty("company", company["id"])
+    c = env.contact_of("company", company["id"])
+    assert (c["first_name"], c["company"]) == ("Maria", "Hotel Lux SRL")
+
+
 def test_company_address_shared_with_a_person_syncs_only_the_person(env):
     company = env.twenty.add_company("Hotel Lux", email="office@hotel.ro", tip="HOTEL")
     person = env.twenty.add_person("office@hotel.ro", company_id=company["id"])
@@ -245,6 +257,16 @@ def test_reply_from_unknown_address_creates_person_at_matching_company(env):
     assert len(new) == 1 and new[0]["companyId"] == company["id"]
     assert env.twenty.notes_for("person", new[0]["id"])
     assert env.contact_of("person", new[0]["id"]) is not None
+
+
+def test_mail_from_unknown_address_outside_campaigns_is_ignored(env):
+    setup_restaurant(env)
+    event = reply_event("dmarcreport@microsoft.com")
+    event["data"]["campaign_id"] = ""
+    deliver(env, event)
+    env.drain()
+    assert len(env.twenty.records["person"]) == 1
+    assert not env.twenty.notes
 
 
 def test_twenty_down_then_up_note_once(env):

@@ -205,6 +205,10 @@ class Engine:
             sups = self._suppressions(email_now)
             suppressed = bool(sups)
         view_w = mapping.warmbly_view(self.cfg, contact, suppressed)
+        if kind == "company":
+            # A company address has no person name in Twenty: a name set in Warmbly is kept there.
+            for key in ("first_name", "last_name"):
+                view_t[key] = view_w[key]
         contact_ts = _ts(contact.get("updated_at"))
 
         def twenty_newer(key):
@@ -315,6 +319,9 @@ class Engine:
             return matches[0]
         if not email:
             raise SyncError(f"event without contact email: {data}")
+        if not data.get("campaign_id"):
+            # Mail to the inbox from outside any campaign (e.g. DMARC reports): not a prospect.
+            return None, None
         return "person", self._create_person(email)["id"]
 
     def _campaign_name(self, campaign_id):
@@ -326,6 +333,9 @@ class Engine:
     def handle_reply(self, job):
         data = job["payload"]["data"]
         kind, twenty_id = job["payload"].get("target") or self._resolve(data)
+        if twenty_id is None:
+            log.info("ignored %s from unknown %s outside any campaign", job["kind"], data.get("contact_email"))
+            return
         job["payload"]["target"] = [kind, twenty_id]
         campaign = self._campaign_name(data.get("campaign_id"))
         step = ""
@@ -350,6 +360,9 @@ class Engine:
     def handle_unsubscribe(self, job):
         data = job["payload"]["data"]
         kind, twenty_id = job["payload"].get("target") or self._resolve(data)
+        if twenty_id is None:
+            log.info("ignored %s from unknown %s outside any campaign", job["kind"], data.get("contact_email"))
+            return
         job["payload"]["target"] = [kind, twenty_id]
         source = data.get("source") or "unknown"
         title = f"Unsubscribed — {self._campaign_name(data.get('campaign_id'))} ({source})"
