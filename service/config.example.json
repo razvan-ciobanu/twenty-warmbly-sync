@@ -1,0 +1,24 @@
+{
+  "twenty_url": "https://crm.example.com",
+  "warmbly_url": "https://api.outreach.example.com/v1",
+  "warmbly_app_url": "https://outreach.example.com",
+  "fields": {
+    "company_email": "emails",
+    "company_phone": null,
+    "do_not_contact": "doNotContact",
+    "warmbly_contact_id": "warmblyContactId"
+  },
+  "custom_fields": {
+    "city": "company.address.addressCity",
+    "domain": "company.domainName.primaryLinkUrl",
+    "job_title": "person.jobTitle"
+  },
+  "label": null,
+  "reconcile_minutes": 15,
+  "full_reconcile_hours": 24,
+  "warmbly_requests_per_minute": 55,
+  "db_path": "/data/crm-sync.db",
+  "metrics_file": null,
+  "listen_host": "0.0.0.0",
+  "listen_port": 8092
+}

@@ -1,3 +1,6 @@
 # Git worktrees, one per branch (see daiko/CLAUDE.md)
 .worktrees/
 .DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
