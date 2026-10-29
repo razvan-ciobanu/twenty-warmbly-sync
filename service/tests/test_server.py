@@ -91,3 +91,16 @@ def test_unused_events_are_acknowledged(server, env):
     body = json.dumps({"id": "ev-2", "event_type": "campaign.email_sent", "data": {}}).encode()
     assert post(server + "/warmbly", body, warmbly_headers("wb-secret", body, "ev-2"))[0] == 200
     assert env.store.stats()["pending_jobs"] == 0
+
+
+def test_plan_records_writes_without_making_them(env, capsys):
+    from crm_sync.server import Recorder
+    from crm_sync.engine import Engine
+    company = env.twenty.add_company("Hotel Lux", email="office@hotel.ro", tip="HOTEL")
+    tw, wb = Recorder("twenty", env.twenty), Recorder("warmbly", env.warmbly)
+    engine = Engine(env.cfg, tw, wb, env.store, env.engine.field_types)
+    result = engine.reconcile(full=True)
+    assert result["failed"] == 0
+    assert env.warmbly.contacts == {} and env.warmbly.writes == 0
+    assert [w[0] for w in wb.writes] == ["create_contact"]
+    assert "[plan] warmbly.create_contact" in capsys.readouterr().out

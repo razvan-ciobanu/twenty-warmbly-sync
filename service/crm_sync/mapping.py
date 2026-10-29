@@ -91,7 +91,8 @@ def warmbly_view(cfg, contact, suppressed):
         view["opt_out"] = bool(suppressed) or contact.get("subscribed") is False
     if cfg.label_path:
         ours = set(cfg.label_values.values())
-        present = [c["id"] for c in contact.get("categories") or [] if c.get("id") in ours]
+        ids = [c.get("id") if isinstance(c, dict) else c for c in contact.get("categories") or []]
+        present = [i for i in ids if i in ours]
         # Several of our labels at once is ambiguous: report "no change" via UNSET.
         view["label"] = present[0] if len(present) == 1 else (None if not present else UNSET)
     custom = contact.get("custom_fields") or {}
@@ -160,7 +161,7 @@ def warmbly_patch(cfg, changes, contact):
         patch["custom_fields"] = {k: v for k, v in merged.items() if v != ""}
     if "label" in changes:
         ours = set(cfg.label_values.values())
-        current = {c["id"] for c in (contact or {}).get("categories") or []}
+        current = {c.get("id") if isinstance(c, dict) else c for c in (contact or {}).get("categories") or []}
         remove = sorted((current & ours) - {changes["label"]})
         if remove:
             patch["remove_categories"] = remove

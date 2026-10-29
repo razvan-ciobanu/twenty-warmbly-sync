@@ -270,8 +270,12 @@ class Recorder:
             print(f"[plan] {self._name}.{attr}{json.dumps(args, ensure_ascii=False, default=str)}")
             self._n += 1
             fake_id = f"00000000-0000-4000-8000-{self._n:012d}"
-            if attr in ("create", "create_contact"):
-                return {"id": fake_id, **(args[-1] if isinstance(args[-1], dict) else {})}
+            if attr == "create":
+                return {"id": fake_id, **args[-1]}
+            if attr == "create_contact":
+                body = args[-1]
+                return {**body, "id": fake_id, "subscribed": True, "campaigns": [], "updated_at": "",
+                        "categories": [{"id": c} for c in body.get("categories", [])]}
             if attr == "create_note":
                 return fake_id
             if attr in ("update", "patch_contact"):
