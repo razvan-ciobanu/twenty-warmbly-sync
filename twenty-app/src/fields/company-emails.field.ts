@@ -1,7 +1,9 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
+import { COMPANY_EMAILS_FIELD_ID } from 'src/constants/universal-identifiers';
+
 export default defineField({
-  universalIdentifier: 'c755f8e1-5f15-42b4-a07d-1416a4a52ee6',
+  universalIdentifier: COMPANY_EMAILS_FIELD_ID,
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
   name: 'emails',
   type: FieldType.EMAILS,

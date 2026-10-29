@@ -1,7 +1,9 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
+import { PERSON_WARMBLY_CONTACT_FIELD_ID } from 'src/constants/universal-identifiers';
+
 export default defineField({
-  universalIdentifier: '0b42c960-cfcb-498c-918c-8868e6e6e98a',
+  universalIdentifier: PERSON_WARMBLY_CONTACT_FIELD_ID,
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
   name: 'warmblyContactId',
   type: FieldType.TEXT,

@@ -1,6 +1,6 @@
 {
   "name": "warmblySyncFields",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "AGPL-3.0-only",
   "description": "Twenty side of crm-sync (Twenty <-> Warmbly): sync marks, buttons and fields",
   "engines": {

@@ -1,7 +1,9 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
+import { COMPANY_SYNC_FIELD_ID } from 'src/constants/universal-identifiers';
+
 export default defineField({
-  universalIdentifier: '6e85eb9e-f2be-4dc8-8411-4a8955512301',
+  universalIdentifier: COMPANY_SYNC_FIELD_ID,
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
   name: 'syncToWarmbly',
   type: FieldType.BOOLEAN,
