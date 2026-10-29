@@ -323,3 +323,68 @@ def test_conflicting_edits_twenty_later_wins(env):
     env.engine.sync_warmbly(c["id"])
     assert env.twenty.records["person"][person["id"]]["name"]["lastName"] == "Twenty"
     assert env.warmbly.contacts[c["id"]]["last_name"] == "Twenty"
+
+
+# Only marked records
+
+def test_unmarked_person_is_not_synced(env):
+    company = env.twenty.add_company("Bistro", tip="RESTAURANT", sync=False)
+    person = env.twenty.add_person("ana@bistro.ro", company_id=company["id"])
+    env.engine.reconcile(full=True)
+    assert env.warmbly.contacts == {}
+
+
+def test_marked_person_of_unmarked_company_is_synced_alone(env):
+    company = env.twenty.add_company("Hotel Lux", email="office@hotel.ro", tip="HOTEL", sync=False)
+    person = env.twenty.add_person("ana@hotel.ro", company_id=company["id"], sync=True)
+    env.engine.reconcile(full=True)
+    assert [c["email"] for c in env.warmbly.contacts.values()] == ["ana@hotel.ro"]
+
+
+def test_marking_a_company_syncs_its_address_and_people(env):
+    from crm_sync.server import twenty_jobs
+    company = env.twenty.add_company("Hotel Lux", email="office@hotel.ro", tip="HOTEL", sync=False)
+    for email in ("ana@hotel.ro", "ion@hotel.ro"):
+        env.twenty.add_person(email, company_id=company["id"])
+    env.engine.reconcile(full=True)
+    assert env.warmbly.contacts == {}
+    env.twenty.edit("company", company["id"], syncToWarmbly=True)           # the "Sync to Warmbly" button
+    env.store.accept_event("tw-m", "twenty", twenty_jobs({"eventName": "company.updated", "record": {"id": company["id"]}}))
+    env.drain()
+    assert sorted(c["email"] for c in env.warmbly.contacts.values()) == ["ana@hotel.ro", "ion@hotel.ro", "office@hotel.ro"]
+
+
+def test_company_mark_without_webhook_reaches_people_by_reconciliation(env):
+    company = env.twenty.add_company("Hotel Lux", tip="HOTEL", sync=False)
+    person = env.twenty.add_person("ana@hotel.ro", company_id=company["id"])
+    env.engine.reconcile(full=True)
+    env.twenty.edit("company", company["id"], syncToWarmbly=True)
+    env.engine.reconcile()
+    assert env.contact_of("person", person["id"]) is not None
+
+
+def test_unmarking_retires_but_keeps_the_contact(env):
+    company, person = setup_restaurant(env)
+    c = env.contact_of("person", person["id"])
+    env.warmbly.edit(c["id"], campaigns=[{"id": "camp-1"}])
+    env.twenty.edit("company", company["id"], syncToWarmbly=False)          # "Stop syncing to Warmbly"
+    env.engine.reconcile()
+    assert env.warmbly.contacts[c["id"]]["campaigns"] == []
+    assert env.store.link_by_twenty("person", person["id"])["active"] == 0
+    env.twenty.edit("person", person["id"], syncToWarmbly=True)
+    env.engine.reconcile()
+    link = env.store.link_by_twenty("person", person["id"])
+    assert (link["active"], link["warmbly_id"]) == (1, c["id"])
+
+
+def test_record_matched_from_warmbly_gets_marked(env):
+    company = env.twenty.add_company("Bistro", tip="RESTAURANT", domain="https://bistro.ro", sync=False)
+    person = env.twenty.add_person("ana@bistro.ro", company_id=company["id"])
+    c = env.warmbly.create_contact({"email": "ana@bistro.ro"})
+    env.engine.sync_warmbly(c["id"])
+    assert env.twenty.records["person"][person["id"]]["syncToWarmbly"] is True
+    assert env.contact_of("person", person["id"])["id"] == c["id"]
+    deliver(env, reply_event("nou@bistro.ro"))
+    env.drain()
+    new = next(p for p in env.twenty.records["person"].values() if p["emails"]["primaryEmail"] == "nou@bistro.ro")
+    assert new["syncToWarmbly"] is True and env.contact_of("person", new["id"]) is not None

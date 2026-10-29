@@ -18,7 +18,7 @@ def make_cfg(tmp_path):
     return Config(
         twenty_url="http://twenty", warmbly_url="http://warmbly/v1", warmbly_app_url="https://outreach.example",
         company_email_field="emails", company_phone_field="telefon",
-        do_not_contact_field="doNotContact", link_field="warmblyContactId",
+        do_not_contact_field="doNotContact", link_field="warmblyContactId", sync_flag_field="syncToWarmbly",
         custom_fields={"city": "company.address.addressCity", "domain": "company.domainName.primaryLinkUrl",
                        "google_rating": "company.ratingGoogle", "type": "company.tipProspect",
                        "job_title": "person.jobTitle"},

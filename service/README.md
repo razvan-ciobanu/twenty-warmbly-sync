@@ -2,9 +2,12 @@
 
 Keeps Twenty CRM and Warmbly consistent. Twenty owns contacts, Warmbly owns campaigns.
 
-- Every Twenty person with an email, and every company with a primary email (optional
-  field), is one Warmbly contact. Records are linked by id, so an address change updates
-  the same contact.
+- Only records marked `syncToWarmbly` are synced: a person when it or its company is
+  marked, a company's own primary email (optional field) when the company is marked. The
+  Twenty app adds "Sync to Warmbly" / "Stop syncing to Warmbly" buttons for selected
+  records. Unmarking works like a deletion; without the field everything with an email is
+  synced. Each synced record is one Warmbly contact, linked by id, so an address change
+  updates the same contact.
 - Names, email, phone, company name, a label (e.g. Hotel/Restaurant from a select field)
   and mapped custom fields sync both ways. A field changed on one side is copied to the
   other; changed on both, the later edit wins. A company field edited on one Warmbly

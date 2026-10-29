@@ -24,6 +24,7 @@ class Config:
     company_phone_field: str | None = None      # PHONES on company
     do_not_contact_field: str | None = None     # BOOLEAN on person and company
     link_field: str | None = None               # TEXT on person and company
+    sync_flag_field: str | None = None          # BOOLEAN on person and company; None = sync everything
     # Warmbly custom field -> Twenty path ("person.<field>[.<sub>]" or "company.<field>[.<sub>]").
     custom_fields: dict = field(default_factory=dict)
     # A Twenty value mapped to Warmbly labels: {"field": "<path>", "values": {value: label_id}}.
@@ -65,6 +66,7 @@ def load(path=None, env=None):
         company_phone_field=fields.get("company_phone"),
         do_not_contact_field=fields.get("do_not_contact"),
         link_field=fields.get("warmbly_contact_id"),
+        sync_flag_field=fields.get("sync_flag"),
         **data,
     )
     cfg.twenty_api_key = env.get("TWENTY_API_KEY", "")
@@ -91,7 +93,8 @@ def missing_fields(cfg, person_fields, company_fields):
     if cfg.company_phone_field and cfg.company_phone_field not in company_fields:
         disabled.append(f"company.{cfg.company_phone_field} (company phone)")
         cfg.company_phone_field = None
-    for attr, what in (("do_not_contact_field", "opt-out sync"), ("link_field", "link field")):
+    for attr, what in (("do_not_contact_field", "opt-out sync"), ("link_field", "link field"),
+                       ("sync_flag_field", "sync marks: every record with an email is synced")):
         name = getattr(cfg, attr)
         if name and not (name in person_fields and name in company_fields):
             disabled.append(f"{name} on person/company ({what})")

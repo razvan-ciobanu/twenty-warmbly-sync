@@ -28,10 +28,11 @@ def _get(obj, path):
 
 class FakeTwenty:
     PERSON_FIELDS = {"name": "FULL_NAME", "emails": "EMAILS", "phones": "PHONES", "jobTitle": "TEXT",
-                     "companyId": "UUID", "doNotContact": "BOOLEAN", "warmblyContactId": "TEXT"}
+                     "companyId": "UUID", "doNotContact": "BOOLEAN", "warmblyContactId": "TEXT",
+                     "syncToWarmbly": "BOOLEAN"}
     COMPANY_FIELDS = {"name": "TEXT", "domainName": "LINKS", "address": "ADDRESS", "telefon": "PHONES",
                       "tipProspect": "SELECT", "ratingGoogle": "NUMBER", "emails": "EMAILS",
-                      "doNotContact": "BOOLEAN", "warmblyContactId": "TEXT"}
+                      "doNotContact": "BOOLEAN", "warmblyContactId": "TEXT", "syncToWarmbly": "BOOLEAN"}
 
     def __init__(self, with_app=True):
         self.records = {"person": {}, "company": {}}
@@ -46,23 +47,24 @@ class FakeTwenty:
             raise ApiError(503, "down")
 
     # helpers for tests
-    def add_company(self, name, email="", tip=None, city="București", domain="", phone="", **extra):
+    def add_company(self, name, email="", tip=None, city="București", domain="", phone="", sync=True, **extra):
         rec = {"name": name, "domainName": {"primaryLinkUrl": domain, "primaryLinkLabel": "", "secondaryLinks": []},
                "address": {"addressCity": city, "addressStreet1": "Str. 1"},
                "telefon": {"primaryPhoneNumber": phone, "primaryPhoneCallingCode": "+40" if phone else "",
                            "primaryPhoneCountryCode": "RO" if phone else "", "additionalPhones": []},
                "tipProspect": tip, "ratingGoogle": 4.5, **extra}
         if self.with_app:
-            rec.update(emails={"primaryEmail": email, "additionalEmails": []}, doNotContact=False, warmblyContactId="")
+            rec.update(emails={"primaryEmail": email, "additionalEmails": []}, doNotContact=False, warmblyContactId="",
+                       syncToWarmbly=sync)
         return self.create("company", rec)
 
-    def add_person(self, email, first="Ana", last="Pop", company_id=None, **extra):
+    def add_person(self, email, first="Ana", last="Pop", company_id=None, sync=False, **extra):
         rec = {"name": {"firstName": first, "lastName": last},
                "emails": {"primaryEmail": email, "additionalEmails": []},
                "phones": {"primaryPhoneNumber": "", "primaryPhoneCallingCode": "", "additionalPhones": []},
                "jobTitle": "Manager", "companyId": company_id, **extra}
         if self.with_app:
-            rec.update(doNotContact=False, warmblyContactId="")
+            rec.update(doNotContact=False, warmblyContactId="", syncToWarmbly=sync)
         return self.create("person", rec)
 
     def edit(self, kind, rid, **changes):
@@ -157,7 +159,7 @@ class FakeTwenty:
     def field_types(self, kind):
         fields = dict(self.PERSON_FIELDS if kind == "person" else self.COMPANY_FIELDS)
         if not self.with_app:
-            for name in ("doNotContact", "warmblyContactId", "emails" if kind == "company" else None):
+            for name in ("doNotContact", "warmblyContactId", "syncToWarmbly", "emails" if kind == "company" else None):
                 fields.pop(name, None)
         return fields
 

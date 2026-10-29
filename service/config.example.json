@@ -6,7 +6,8 @@
     "company_email": "emails",
     "company_phone": null,
     "do_not_contact": "doNotContact",
-    "warmbly_contact_id": "warmblyContactId"
+    "warmbly_contact_id": "warmblyContactId",
+    "sync_flag": "syncToWarmbly"
   },
   "custom_fields": {
     "city": "company.address.addressCity",

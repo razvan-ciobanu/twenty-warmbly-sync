@@ -57,6 +57,20 @@ class Engine:
                     companies[company_id] = company
         return record, company
 
+    def _marked(self, kind, record, company):
+        """Whether the record is chosen for sync: itself or (for a person) its company is marked."""
+        flag = self.cfg.sync_flag_field
+        if not flag:
+            return True
+        if record.get(flag):
+            return True
+        return kind == "person" and bool((company or {}).get(flag))
+
+    def _mark(self, kind, twenty_id):
+        """Mark a record that came from Warmbly (it already exists there)."""
+        if self.cfg.sync_flag_field:
+            self.twenty.update(kind, twenty_id, {self.cfg.sync_flag_field: True})
+
     def _shadowed(self, company, email):
         """A company address that one of its people also has: only the person is synced."""
         people = self.twenty.find("person", filter=f'companyId[eq]:"{company["id"]}"')
@@ -80,6 +94,7 @@ class Engine:
         record, company = self._load(kind, twenty_id, record, companies)
         view_t = mapping.twenty_view(self.cfg, kind, record, company) if record else None
         if (view_t is None or not view_t["email"]
+                or not self._marked(kind, record, company)
                 or (kind == "company" and not self.cfg.company_email_field)
                 or (kind == "company" and self._shadowed(record, view_t["email"]))):
             if link and link["active"]:
@@ -104,6 +119,9 @@ class Engine:
         kind, twenty_id = self._twenty_match(contact)
         if twenty_id is None:
             return
+        record, company = self._load(kind, twenty_id)
+        if record and not self._marked(kind, record, company):
+            self._mark(kind, twenty_id)
         # Adopt this contact for that record; sync_twenty does the field merge.
         self.store.save_link(kind, twenty_id, contact["id"], {}, active=True)
         self.sync_twenty(kind, twenty_id)
@@ -135,6 +153,8 @@ class Engine:
 
     def _create_person(self, email, contact=None):
         data = {"emails": {"primaryEmail": email, "additionalEmails": []}}
+        if self.cfg.sync_flag_field:
+            data[self.cfg.sync_flag_field] = True
         if contact:
             data["name"] = {"firstName": contact.get("first_name") or "", "lastName": contact.get("last_name") or ""}
         companies = list(self.twenty.find("company", filter=f'domainName.primaryLinkUrl[ilike]:"%{_domain(email)}%"'))
@@ -395,6 +415,10 @@ class Engine:
         for kind in KINDS:
             for record in self.twenty.find(kind, filter=flt):
                 run(kind, record["id"], record)
+                if kind == "company" and since and self.cfg.sync_flag_field:
+                    # A company's mark decides for its people too.
+                    for pid in self._people_of(record["id"]):
+                        run("person", pid)
             deleted_flt = f'deletedAt[gte]:"{since}"' if since else "deletedAt[is]:NOT_NULL"
             for record in self.twenty.find(kind, filter=deleted_flt):
                 run(kind, record["id"], record)
